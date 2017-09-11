@@ -1,0 +1,60 @@
+- grouped_equipment = @worksite.safety_equipment.sort_by(&:order).group_by(&:equipment_area)
+- grouped_equipment.each do |equipment_area,equipment|
+  %br
+  %h4= equipment_area.present? ? equipment_area.name : "Unclassified"
+  %table
+    %thead
+      %tr
+        %th Identifier
+        %th Equipment
+        %th Model Info
+        %th Location
+        %th Ready Inspect
+        %th Maint. Inspect
+        %th Dates
+        %th Reports
+        %th{ :colspan => 2 } Maint. Reports
+
+
+    %tbody
+      - reset_cycle
+      - equipment.each do |equipment|
+        %tr{ :class => cycle("odd","even")}
+          %td= equipment.id
+          %td
+            = equipment.equipment_type.name if equipment.equipment_type
+            = "(BkUp)" if equipment.backup?
+            = equipment.serial_number.present? ? " - #{equipment.serial_number}" : ""
+
+            %br
+
+            %i= equipment.notes
+          %td
+            = equipment.vendor_name
+            ,
+            = equipment.model_type_name
+          - if equipment.out_of_service_for_date?(Date.today) 
+            %td.stop Out Of Service
+          - else
+            %td= equipment.location.name if equipment.location
+          %td= equipment.inspection_frequency_label if equipment.inspection_frequency
+          %td= equipment.maintenance_frequency.present? ? equipment.maintenance_frequency.label : "None"
+          %td
+            %b{ :title => "Purchase Date"} Pur.
+            = equipment.purchase_date.present? ? equipment.purchase_date.strftime(DEFAULT_DATE_FORMAT) : "Unknown"
+            %br
+            %b{:title => "Expiration Date"} Exp.
+            = equipment.battery_expiration.present? ? equipment.battery_expiration.strftime(DEFAULT_DATE_FORMAT) : "Unknown"
+          %td
+            = link_to "#{equipment.static_equipment_reports.count}", rws_worksite_safety_equipment_path(@worksite,equipment)
+          %th
+            = link_to "#{equipment.reports.for_ambiguous_tag('maintenance').count}", rws_worksite_safety_maintenance_reports_path(:worksite_id => @worksite.id, :questionnaire_id => equipment.maintenance_questionnaire_id, :equipment_id => equipment.id)
+
+
+    %tfoot
+      %tr
+        %td{ :colspan => 10 }
+
+
+- if current_user.has_worksite_access_level?(@worksite,:administrative)
+  = link_to "Edit Management Plan", edit_rws_worksite_safety_management_plans_path(@worksite.id)

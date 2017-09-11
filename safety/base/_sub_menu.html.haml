@@ -1,0 +1,6 @@
+#sub_menu
+  .sub_menu_link= location_aware_link_to "Management Plan".html_safe, rws_worksite_safety_management_plans_path(@worksite.id)
+  //.sub_menu_link= location_aware_link_to "Ready Status <br/><span class='stop'>(File)</span> Report".html_safe, rws_worksite_safety_ready_reports_path(@worksite.id)
+  .sub_menu_link= location_aware_link_to "Maintenance<br/>History".html_safe, rws_worksite_safety_maintenance_reports_path(@worksite.id)
+
+  .clear

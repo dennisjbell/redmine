@@ -1,0 +1,15 @@
+= link_to_function image_tag("icons/add.png"), "addNewItemFromTemplate('#location_fields .clone_for_new_row', '#location_fields')"
+Locations
+%table
+  %thead
+    %tr
+      %th Location Name
+      %th Notes 
+      %th Delete
+    %tbody#location_fields
+      = form.fields_for :locations do |location|
+        %tr{:class => (location.object.new_record? ? "clone_for_new_row hide" : "cloned_row"), :id => (location.object.new_record? ? "clone_for_new_row" : "") }
+          %td= location.text_field :name, :class => "nested_item"
+          %td= location.text_field :notes, :class => "nested_item full_width"
+          %td= location.check_box :_destroy, :class => "nested_item"
+

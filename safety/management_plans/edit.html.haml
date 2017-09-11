@@ -1,0 +1,65 @@
+= form_for @worksite, :url => rws_worksite_safety_management_plans_path(@worksite.id) do |form|
+  = errors_for_form(form)
+  %h3
+    = link_to_function image_tag("icons/add.png"), "addNewItemFromTemplate('#equipment_fields .clone_for_new_row', '#equipment_fields')"
+    Equipment
+  %table
+    %thead
+      %tr
+        %th
+        %th Equipment Type
+        %th Optional Details
+        %th Frequencies
+        %th Location
+        %th Delete
+      %tbody#equipment_fields
+        = form.fields_for :safety_equipment do |equipment|
+          %tr{:class => (equipment.object.new_record? ? "clone_for_new_row hide" : "cloned_row"), :id => (equipment.object.new_record? ? "clone_for_new_row" : "") }
+            %td= equipment.collection_select :equipment_area_id, @equipment_areas, :id, :name, {:include_blank => true}, {:onchange => "filterOptgroupsInSibling(this)"}
+            %td.equipment_type_select
+              = equipment.grouped_collection_select :equipment_type_id, @equipment_areas, :equipment_types, :name, :id, :tag_label, { :insert_blank => true }
+            %td
+              %div
+                %b Vendor
+                %br= equipment.collection_select :vendor_id, SafetyVendor.order("name"), :id, :name, {:include_blank => false}, {:style => "width:180px"}
+              %div
+                %b Model
+                %br= equipment.text_field :model_type, :size => 20
+              %div
+                %b Serial#
+                %br= equipment.text_field :serial_number, :size => 20
+              %div
+                %b Purchased On
+                %br= equipment.text_field :purchase_date, :class => "datepicker", :size => 20
+              %div
+                %b Expiration
+                %br= equipment.text_field :battery_expiration, :class => "datepicker", :size => 20
+              %div
+                %b Report Group
+                %br= equipment.collection_select :report_group_id, @worksite.report_groups.all, :id, :name, { :include_blank => true}, {:style => "max-width: 300px;"}
+              %div
+                %b Questionnaire
+                %br= equipment.grouped_collection_select :questionnaire_id, Organization.parent_plus_proxy(@worksite), "questionnaires", :name, :id, :title, { :include_blank => true}, {:style => "max-width: 300px;"}
+              %div
+                %b Maintenance Questionnaire
+                %br= equipment.grouped_collection_select :maintenance_questionnaire_id, Organization.parent_plus_proxy(@worksite), "questionnaires", :name, :id, :title, { :include_blank => true}, {:style => "max-width: 300px;"}
+            %td
+              %b Inspection
+              = equipment.collection_select :inspection_frequency_id, @worksite.inspection_frequencies, :id, :name, {:include_blank => true}, :class => "nested_item"
+              %b Maintenance
+              = equipment.collection_select :maintenance_frequency_id, @worksite.inspection_frequencies, :id, :name, {:include_blank => true}, :class => "nested_item"
+
+            %td= equipment.collection_select :location_id, @worksite.locations, :id, :name , {:include_blank => true},{:class => "nested_item", :style => "width: 100px"}
+            %td= equipment.check_box :_destroy
+
+
+  = form.submit
+
+:javascript
+  function filterOptgroupsInSibling(elt){
+    var sibling_select = $(elt).parents("td").siblings("td.equipment_type_select:first").children("select:first");
+    sibling_select.children("optgroup").hide();
+    var selected_text = $(elt).children("option:selected").text()
+    console.log(selected_text)
+    sibling_select.children("optgroup[label='" + selected_text + "']").show();
+  }

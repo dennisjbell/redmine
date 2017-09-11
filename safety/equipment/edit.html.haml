@@ -1,0 +1,54 @@
+%h3
+  = link_to image_tag("icons/add.png"), new_rws_worksite_safety_equipment_path(@worksite.id)
+  AED Equipment
+%table
+  %thead
+    %tr
+      %th Area
+      %th Equipment Type
+      %th Optional Details
+      %th Location
+      %th Inspection Freq
+      %th Maintenance Freq
+      %th Notes
+      %th Delete
+  = form_for @worksite, :url => rws_worksite_aed_equipment_path(@worksite.id) do |form|
+    = errors_for_form(form)
+    %tbody#equipment_fields
+      = form.fields_for :safety_equipment do |equipment|
+        %tr{:class => cycle("odd ","even ") }
+          %td= equipment.collection_select :equipment_area_id, EquipmentArea.order("name"), :id, :name, {:include_blank => true}
+          %td= equipment.collection_select :equipment_type_id, EquipmentType.safety, :id, :name, {:include_blank => true}
+          %td
+            %div
+              %b Vendor
+              %br= equipment.collection_select :vendor_id, AedVendor.order("name"), :id, :name, {:include_blank => true}, {:style => "width:180px"}
+            %div
+              %b Model
+              %br= equipment.text_field :model_type, :size => 20
+            %div
+              %b Serial#
+              %br= equipment.text_field :serial_number, :size => 20
+            %div
+              %b Purchased On
+              %br= equipment.text_field :purchase_date, :class => "datepicker", :size => 20
+            %div
+              %b Battery / Part Expire
+              %br= equipment.text_field :battery_expiration, :class => "datepicker", :size => 20
+            %div
+              %b Count
+              %br= equipment.text_field :count, :size => 10
+            %div
+              %b Attached To
+              %br= equipment.collection_select :parent_id, @worksite.aed_equipment, :id, :label, {:include_blank => true}, {:style => "width: 190px;"}
+            %div
+              %b Backup?
+              %br= equipment.check_box :backup
+
+          %td= equipment.collection_select :location_id, @worksite.locations, :id, :name , {:include_blank => true},{:class => "nested_item", :style => "width: 100px"}
+          %td= equipment.collection_select :inspection_frequency_id, @worksite.inspection_frequencies, :id, :name, {:include_blank => true}, :class => "nested_item"
+          %td= equipment.collection_select :maintenance_frequency_id, @worksite.inspection_frequencies, :id, :name, {:include_blank => true}, :class => "nested_item"
+          %td= equipment.text_field :notes
+          %td= equipment.check_box :_destroy
+    %tr
+      %td= form.submit

@@ -1,0 +1,27 @@
+%h3
+  = link_to_function image_tag("icons/add.png"), "addNewItemFromTemplate('#frequency_fields .clone_for_new_row', '#frequency_fields')"
+  Frequencies
+%table
+  %thead
+    %tr
+      %th Frequency Name
+      %th Count
+      %th Period
+      %th Notes
+      %th Delete
+    %tbody#frequency_fields
+      = form.fields_for :inspection_frequencies do |frequency|
+        %tr{:class => (frequency.object.new_record? ? "clone_for_new_row hide" : "cloned_row"), :id => (frequency.object.new_record? ? "clone_for_new_row" : "") }
+          %td= frequency.text_field :name, :class => "nested_item"
+          %td= frequency.collection_select :period_id,Period.all,:id,:name,{}, :class => "nested_item"
+          %td
+            = frequency.text_field :day_list, :class => "nested_item"
+            %td
+              = frequency.text_area :day_list, :rows => 3
+              %br
+              Alert
+              = frequency.text_field :alert_minutes, :size => 5
+              Minutes
+              = frequency.select :alert_type, { '' => "", 'before' => "0", 'after' => '1'}
+          %td= frequency.text_field :notes, :class => "nested_item full_width"
+          %td= frequency.check_box :_destroy, :class => "nested_item"

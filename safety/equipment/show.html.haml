@@ -1,0 +1,23 @@
+%h3
+  Reports for
+  = @equipment.label
+
+%table
+  %thead
+    %tr
+      %th Serial Number
+      %th Label
+      %th Inspected By
+      %th Device Present
+      %th Comments
+      %th Report Date
+  %tbody
+    - @equipment.static_equipment_reports.each do |ser|
+
+      %tr{ :class => cycle("odd","even")}
+        %td= ser.serial_number
+        %td= ser.label
+        %td= ser.contact_full_name
+        %td= ser.data['device_present']
+        %td= ser.data['comment']
+        %td= ser.filed_at
