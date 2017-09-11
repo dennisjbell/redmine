@@ -20,7 +20,7 @@ gem "i18n", "~> 0.7.0"
 gem "rails-html-sanitizer", ">= 1.0.3"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem 'tzinfo-data', platforms: [:mingw, :x64_mingw, :mswin]
+gem 'tzinfo-data'#, platforms: [:mingw, :x64_mingw, :mswin]
 gem "rbpdf", "~> 1.19.2"
 
 # Optional gem for LDAP authentication
@@ -60,7 +60,7 @@ if File.exist?(database_file)
       when 'mysql2'
         gem "mysql2", "~> 0.4.6", :platforms => [:mri, :mingw, :x64_mingw]
       when /postgresql/
-        gem "pg", "~> 0.18.1", :platforms => [:mri, :mingw, :x64_mingw]
+        gem "pg", "~> 0.21.0", :platforms => [:mri, :mingw, :x64_mingw]
       when /sqlite3/
         gem "sqlite3", "~>1.3.12", :platforms => [:mri, :mingw, :x64_mingw]
       when /sqlserver/
