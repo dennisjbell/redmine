@@ -2,12 +2,12 @@ version: '3'
 services:
   db:
     image: core/postgresql
-    volumes:
-      - "./habitat/default.toml:/default.toml"
   railsapp:
-    image: your_origin/widget_world
+    image: dennisjbell/redmine
     ports:
       - 8000:8000
+    volumes:
+      - ./habitat:/conf
+    command: --peer db --bind database:postgresql.default --config-from /conf
     links:
     - db
-    command: --peer db --bind database:postgresql.default
