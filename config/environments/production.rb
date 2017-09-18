@@ -22,4 +22,7 @@ Rails.application.configure do
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
+
+  # Get the secret key base from the environment, not config/secret.yml
+  config.secret_key_base = ENV["SECRET_KEY_BASE"]
 end
