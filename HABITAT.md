@@ -64,7 +64,8 @@ configure your workstation.
 In order to package the Redmine application up with Habitat, we need a Habitat
 `plan.sh` file and a `default.toml` configuration file.  We have already
 created these files for you, but here are the steps we used to create it so
-you can understand the process and tweak it if needed.[^1]
+you can understand the process and tweak it if needed.<sup
+id="a1">[1](#f1)</sup>
 
 While these files can be placed in the root of the application repository, we
 elected to place them in the `habitat` subdirectory as it is cleaner and better
@@ -113,7 +114,8 @@ are:
   database details without actually needing to connect to a database.  In a
   Rails 5 app, the nulldb adaptor wasn't needed, and could simply use
   `postgresql://...`  This may not be needed at all in later
-  `core/scaffolding-ruby` releases.[^2]
+  `core/scaffolding-ruby` releases.<sup
+id="a1">[2](#f2)</sup>
 
 
 #### The `habitat/default.toml` File
@@ -121,7 +123,8 @@ are:
 The default.toml file contains the base configuration for the packaged Redmine
 habitat file that we're going to generate.  It contains both base settings
 that are not likely to need changing, as well as default (or empty) values
-that should be overwritten by using `hab config apply ...` [^3] once runtting
+that should be overwritten by using `hab config apply ...` <sup
+id="a1">[3](#f3)</sup> once runtting
 or by editing default.toml directly and rebuilding the package for personal
 use (be sure not to commit the file if it contains passwords or secrets)
 Alternatively, if using Cloud Foundry, these secrets are taken care of in a
@@ -168,12 +171,12 @@ the Redmine repository:
 
 - - -
 
-[^1]: These steps were performed by following the excellent "[Habitat, Rails, and
+<b id="f1">[1]</b> These steps were performed by following the excellent "[Habitat, Rails, and
   Postgres in 3 Different
   Ways](https://www.habitat.sh/blog/2017/08/habitat-rails-postgres-3-different-ways/)"
   blog post by Nell Shamrell-Harrinton.  Please read her post to understand
-  the process in greater detail.
+  the process in greater detail. [↩](#s1)
 
-[^2]: [[scaffolding-ruby] provide a default database config for asset compilation #757](https://github.com/habitat-sh/core-plans/pull/757)
+<b id="f2">[2]</b> [[scaffolding-ruby] provide a default database config for asset compilation #757](https://github.com/habitat-sh/core-plans/pull/757) [↩](#s2)
 
-[^3]: Habitat tutorial on how to [dynamically update your app](https://www.habitat.sh/tutorials/sample-app/mac/update-app/)
+<b id="f3">[3]</b> Habitat tutorial on how to [dynamically update your app](https://www.habitat.sh/tutorials/sample-app/mac/update-app/) [↩](#s3)
