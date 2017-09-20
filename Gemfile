@@ -79,5 +79,6 @@ Dir.glob File.expand_path("../plugins/*/{Gemfile,PluginGemfile}", __FILE__) do |
   eval_gemfile file
 end
 
-# Added at 2017-09-19 15:26:52 -0700 by dbell:
+# Added for Habitat build compatibility
 gem "rails_12factor", "~> 0.0.3"
+gem "activerecord-nulldb-adapter", "~> 0.3.7"

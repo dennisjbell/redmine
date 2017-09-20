@@ -14,6 +14,6 @@ pkg_exposes=(http_port)
 
 # This is necessary due to the installation needing db credentials even though its not used
 do_install() {
-  export DATABASE_URL="postgresql://nobody@starkandwayne.com/fake_db_to_appease_rails_env"
+  export DATABASE_URL="nulldb://nobody@nowhere/fake_db_to_appease_rails_env"
   do_default_install
 }

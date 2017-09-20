@@ -35,6 +35,17 @@ opinionated install that uses Ruby 2.4.1 and PostgreSQL.  Specifically:
 * The `tzinfo-data` gem was included for all platforms, as required by the
   Habitat `core/scaffolding-ruby` package.
 
+* Because this is a Rails 4.2 app, had to add the following gems that aren't
+  needed if using Rails 5:
+  * `rails_12factor` -- while Rails 5 is fully 12factor out of the box, Rails
+    4.2 is slightly deficient, and thus needs the rails_12factor gem to run in
+    habitat.
+
+  * `activerecord_nulldb_adapter` -- in order for the `rake assets:precompile`
+    to run during the build process, it needs to initialize the rails app,
+    which needs a db connection, even though it doesn't use one.  This allows
+    that to work.
+
 ## Install Habitat (and maybe Docker)
 
 In order to use Habitat, you'll need to install the `hab` binary for your
@@ -43,6 +54,10 @@ Follow the [instructions for downloading and installing](https://www.habitat.sh/
 
 If you are using Mac or Windows, you'll also need to install Docker; the
 installation page also has instructions for that as well.
+
+Once installed, follow the instructions on the next pages of the above link to
+create a Habitat account, a personal or orginizational origin, and to
+configure your workstation.
 
 ## Habitat Plan and Default Configuration
 
@@ -77,27 +92,79 @@ pkg_exposes=(http_port)
 
 # This is necessary due to the installation needing db credentials even though its not used
 do_install() {
-  export DATABASE_URL="postgresql://nobody@nowhere/fake_db_to_appease_rails_env"
+  export DATABASE_URL="nulldb://nobody@nowhere/fake_db_to_appease_rails_env"
   do_default_install
 }
 ```
 
 While most of this is boilerplate Habitat plan contents, the uncommon items
 are:
-* The redefining of `do_install`, which works around an issue during
-  installation that requires the database details without actually needing to
-  connect to a database.  This may not be needed in later
-  `core/scaffolding-ruby` releases.[^2]
+* The `pkg_binds_optional` -- by making this optional, the Habitat supervisor
+  will start up without having another habitat service providing these to our
+  app.  This allows external sources for the database.
 
 * The `pkg_exports` and `pkg_exposes`, which is required for making this work on
   Cloud Foundry.  It is very important that the app.port that gets configured
   is LESS THAN the value 9631, which we'll talk about later in the Cloud Foundry
   section below.
 
-* The `pkg_binds_optional` -- by making this optional, the Habitat supervisor
-  will start up without having another habitat service providing these to our
-  app.  This allows external sources for the database.
+* The redefining of `do_install`, which works around the previously mentioned
+  `rake assets:precompile` issue during installation that requires the
+  database details without actually needing to connect to a database.  In a
+  Rails 5 app, the nulldb adaptor wasn't needed, and could simply use
+  `postgresql://...`  This may not be needed at all in later
+  `core/scaffolding-ruby` releases.[^2]
 
+
+#### The `habitat/default.toml` File
+
+The default.toml file contains the base configuration for the packaged Redmine
+habitat file that we're going to generate.  It contains both base settings
+that are not likely to need changing, as well as default (or empty) values
+that should be overwritten by using `hab config apply ...` [^3] once runtting
+or by editing default.toml directly and rebuilding the package for personal
+use (be sure not to commit the file if it contains passwords or secrets)
+Alternatively, if using Cloud Foundry, these secrets are taken care of in a
+later section so don't need to be set here.
+
+The basic contents for the Redmine application's default.toml is:
+```
+secret_key_base = ""
+rails_env = "production"
+
+[app]
+port = 8000
+
+[db]
+user = "admin"
+password = "admin"
+name = "redmine_production"
+host = "192.168.65.1"
+```
+
+The secret_key_base being empty will cause the app to fail to start when first
+pushed up.  If you wish to set this in default.toml, but can't or don't want
+to get the rails app working on your development machine in order to run `rake
+secret` you can simply run the following to get a secure secret key base to
+paste into the file:
+
+```
+ruby -rsecurerandom -e 'puts SecureRandom.hex(64)'
+```
+
+Similarly, the default database configuration is provided as a sample of how
+to connect to a database exiting on the host machine when using docker-compose
+(more on that later) to run your Habitat package.  Alternatively, you may end
+up using a hosted DB solution (such as Amazon RDS) or a database running
+under the same Habitat supervisor (as will be our first example below)
+
+
+# Built Redmine and Export it to Docker
+
+To build the Habitat package, enter into the Habitat studio from the base of
+the Redmine repository:
+
+`hab studio enter`
 
 - - -
 
@@ -108,3 +175,5 @@ are:
   the process in greater detail.
 
 [^2]: [[scaffolding-ruby] provide a default database config for asset compilation #757](https://github.com/habitat-sh/core-plans/pull/757)
+
+[^3]: Habitat tutorial on how to [dynamically update your app](https://www.habitat.sh/tutorials/sample-app/mac/update-app/)
