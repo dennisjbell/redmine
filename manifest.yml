@@ -1,0 +1,7 @@
+---
+applications:
+- name: redmine
+  memory: 512M
+  instances: 1
+  services:
+    - redmine_production

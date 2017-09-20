@@ -1,30 +1,30 @@
 source 'https://rubygems.org'
+ruby "2.4.1"
 
 if Gem::Version.new(Bundler::VERSION) < Gem::Version.new('1.5.0')
   abort "Redmine requires Bundler 1.5.0 or higher (you're using #{Bundler::VERSION}).\nPlease update with 'gem update bundler'."
 end
 
 gem "rails", "4.2.8"
-gem "addressable", "2.4.0" if RUBY_VERSION < "2.0"
 gem "jquery-rails", "~> 3.1.4"
 gem "coderay", "~> 1.1.1"
 gem "request_store", "1.0.5"
-gem "mime-types", (RUBY_VERSION >= "2.0" ? "~> 3.0" : "~> 2.99")
+gem "mime-types", "~> 3.0"
 gem "protected_attributes"
 gem "actionpack-xml_parser"
 gem "roadie-rails", "~> 1.1.1"
 gem "roadie", "~> 3.2.1"
 gem "mimemagic"
 
-gem "nokogiri", (RUBY_VERSION >= "2.1" ? "~> 1.7.2" : "~> 1.6.8")
+gem "nokogiri", "~> 1.7.2"
 gem "i18n", "~> 0.7.0"
-gem "ffi", "1.9.14", :platforms => :mingw if RUBY_VERSION < "2.0"
 
 # Request at least rails-html-sanitizer 1.0.3 because of security advisories
 gem "rails-html-sanitizer", ">= 1.0.3"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem 'tzinfo-data', platforms: [:mingw, :x64_mingw, :mswin]
+# (habitat requires it included for all platforms, not just windows)
+gem 'tzinfo-data'
 gem "rbpdf", "~> 1.19.2"
 
 # Optional gem for LDAP authentication
@@ -50,37 +50,7 @@ platforms :mri, :mingw, :x64_mingw do
   end
 end
 
-# Include database gems for the adapters found in the database
-# configuration file
-require 'erb'
-require 'yaml'
-database_file = File.join(File.dirname(__FILE__), "config/database.yml")
-if File.exist?(database_file)
-  database_config = YAML::load(ERB.new(IO.read(database_file)).result)
-  adapters = database_config.values.map {|c| c['adapter']}.compact.uniq
-  if adapters.any?
-    adapters.each do |adapter|
-      case adapter
-      when 'mysql2'
-        gem "mysql2", "~> 0.4.6", :platforms => [:mri, :mingw, :x64_mingw]
-      when /postgresql/
-        gem "pg", "~> 0.18.1", :platforms => [:mri, :mingw, :x64_mingw]
-      when /sqlite3/
-        gem "sqlite3", (RUBY_VERSION < "2.0" && RUBY_PLATFORM =~ /mingw/ ? "1.3.12" : "~>1.3.12"),
-                       :platforms => [:mri, :mingw, :x64_mingw]
-      when /sqlserver/
-        gem "tiny_tds", (RUBY_VERSION >= "2.0" ? "~> 1.0.5" : "~> 0.7.0"), :platforms => [:mri, :mingw, :x64_mingw]
-        gem "activerecord-sqlserver-adapter", :platforms => [:mri, :mingw, :x64_mingw]
-      else
-        warn("Unknown database adapter `#{adapter}` found in config/database.yml, use Gemfile.local to load your own database gems")
-      end
-    end
-  else
-    warn("No adapter found in config/database.yml, please configure it first")
-  end
-else
-  warn("Please configure your config/database.yml first")
-end
+gem "pg", "~> 0.18.1", :platforms => [:mri, :mingw, :x64_mingw]
 
 group :development do
   gem "rdoc", "~> 4.3"
@@ -108,3 +78,6 @@ end
 Dir.glob File.expand_path("../plugins/*/{Gemfile,PluginGemfile}", __FILE__) do |file|
   eval_gemfile file
 end
+
+# Added at 2017-09-19 15:26:52 -0700 by dbell:
+gem "rails_12factor", "~> 0.0.3"

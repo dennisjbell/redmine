@@ -1,0 +1,16 @@
+# Use this file to templatize your application's native configuration files.
+# See the docs at https://www.habitat.sh/docs/create-packages-configure/.
+# You can safely delete this file if you don't need it.
+
+secret_key_base = "e27171a30f0609cf1749519189612005fc4c6bea1c2ccee5a4293891e15bc730279d8133e540eafeb40000adf5863626f82d1aea1ee980c16104a82542eab764"
+rails_env = "production"
+
+[app]
+port = 8000
+
+
+[db]
+user = "redmine"
+password = "pw4redmine"
+name = "redmine_production"
+host = "192.168.65.1"

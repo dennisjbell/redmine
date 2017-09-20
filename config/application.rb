@@ -42,6 +42,9 @@ module RedmineApp
     # Version of your assets, change this if you want to expire all your assets
     config.assets.version = '1.0'
 
+    # Disable initialization on precompile
+    config.assets.initialize_on_precompile = false
+
     config.action_mailer.perform_deliveries = false
 
     # Do not include all helpers
@@ -71,6 +74,9 @@ module RedmineApp
     # Configure log level here so that additional environment file
     # can change it (environments/ENV.rb would take precedence over it)
     config.log_level = Rails.env.production? ? :info : :debug
+
+    # Get the secret key base from the environment, not config/secret.yml
+    config.secret_key_base = ENV["SECRET_KEY_BASE"]
 
     config.session_store :cookie_store,
       :key => '_redmine_session',
