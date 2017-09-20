@@ -115,7 +115,7 @@ are:
   Rails 5 app, the nulldb adaptor wasn't needed, and could simply use
   `postgresql://...`  This may not be needed at all in later
   `core/scaffolding-ruby` releases.<sup
-id="a1">[2](#f2)</sup>
+id="a2">[2](#f2)</sup>
 
 
 #### The `habitat/default.toml` File
@@ -124,7 +124,7 @@ The default.toml file contains the base configuration for the packaged Redmine
 habitat file that we're going to generate.  It contains both base settings
 that are not likely to need changing, as well as default (or empty) values
 that should be overwritten by using `hab config apply ...` <sup
-id="a1">[3](#f3)</sup> once runtting
+id="a3">[3](#f3)</sup> once runtting
 or by editing default.toml directly and rebuilding the package for personal
 use (be sure not to commit the file if it contains passwords or secrets)
 Alternatively, if using Cloud Foundry, these secrets are taken care of in a
@@ -175,8 +175,8 @@ the Redmine repository:
   Postgres in 3 Different
   Ways](https://www.habitat.sh/blog/2017/08/habitat-rails-postgres-3-different-ways/)"
   blog post by Nell Shamrell-Harrinton.  Please read her post to understand
-  the process in greater detail. [↩](#s1)
+  the process in greater detail. [↩](#a1)
 
-<b id="f2">[2]</b> [[scaffolding-ruby] provide a default database config for asset compilation #757](https://github.com/habitat-sh/core-plans/pull/757) [↩](#s2)
+<b id="f2">[2]</b> [[scaffolding-ruby] provide a default database config for asset compilation #757](https://github.com/habitat-sh/core-plans/pull/757) [↩](#a2)
 
-<b id="f3">[3]</b> Habitat tutorial on how to [dynamically update your app](https://www.habitat.sh/tutorials/sample-app/mac/update-app/) [↩](#s3)
+<b id="f4">[4]</b> Habitat tutorial on how to [dynamically update your app](https://www.habitat.sh/tutorials/sample-app/mac/update-app/) [↩](#a3)
