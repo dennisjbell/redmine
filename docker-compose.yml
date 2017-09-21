@@ -1,0 +1,15 @@
+version: '3'
+services:
+  db:
+    image: core/postgresql
+    volumes:
+      - ./habitat/default.toml:/default.toml
+  railsapp:
+    image: starkandwayne/redmine
+    ports:
+      - 8000:8000
+    volumes:
+      - ./habitat/default.toml:/default.toml
+    command: --peer db --bind database:postgresql.default
+    links:
+    - db
