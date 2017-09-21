@@ -1,6 +1,6 @@
 ---
 applications:
-- name: redmine_on_cf
+- name: redmine
   memory: 512M
   instances: 1
   services:

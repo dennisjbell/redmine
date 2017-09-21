@@ -178,7 +178,7 @@ hab studio enter
 Once inside the studio, run `build`.  Once that completes, run the following
 to export it to docker:
 ```
-hab pkg export docker <your-origin-name>/redmine
+hab pkg export docker &lt;your-origin-name>/redmine
 ```
 
 To test that the export worked, we're also going to want to use
@@ -368,11 +368,11 @@ Service to allow us to use the same PostgreSQL database on our local host
 Run the following command to create a new UPS, and enter the details at the
 prompts.
 ```
-cf cups redmine_production_db -p "url,database,username,password"
+cf cups redmine_production_db -p "host,database,username,password"
 
-<i>url></i> 192.168.11.1
+<i>host></i> 192.168.11.1
 
-<i>database></i> redmine_production_cf
+<i>database></i> redmine_production
 
 <i>username></i> redmine_user
 
@@ -396,10 +396,10 @@ rails_env = "$RAILS_ENV"
 port = "$PORT"
 
 [db]
-user = "$(service "redmine-pg" '.credentials.username')"
-password = "$(service "redmine-pg" '.credentials.password')"
-host = "$(service "redmine-pg" '.credentials.host')"
-name = "$(service "redmine-pg" '.credentials.database')"
+user = "$(service "redmine_production_db" '.credentials.username')"
+password = "$(service "redmine_production_db" '.credentials.password')"
+host = "$(service "redmine_production_db" '.credentials.host')"
+name = "$(service "redmine_production_db" '.credentials.database')"
 ```
 
 This file is not a regular .toml file, but a template that will be processed by
@@ -408,6 +408,14 @@ of the CF environment variable VCAP_SERVICES that we need to provide Habitat.
 The `$PORT` environment variable is provided by CF directly, and the
 `$SECRET_KEY_BASE` and `$RAILS_ENV` we will provide in our manifest.yml file
 (see below).
+
+##### NOTE:
+This is what is needed to map a User-Provided Service to habitat, but other
+service brokers are likely to provide different values, and different habitat
+apps and scaffolds are likely to consume different values as well.  You can
+run `cf env app` to see what values are provided in VCAP_SERVICES once you
+push your app up, but that'll likely mean you'll have to iterate on this build
+process.
 
 #### Exporting a CF-Compatible Docker Image
 
@@ -428,7 +436,7 @@ have to create a dummy core origin key for this to work -- you don't need the
 real key as you won't be pushing anything to core)
 
 ```
-cp /path/to/redmine-repo/results/<your-origin>-redmine-3.4.2-<datestamp>-x86_64-linux.hart .
+cp /path/to/redmine-repo/results/&lt;your-origin>-redmine-3.4.2-&lt;datestamp>-x86_64-linux.hart .
 cp /path/to/redmine-repo/cf-mapping.toml .
 HAB_ORIGIN=core hab studio enter
 ```
@@ -436,8 +444,8 @@ HAB_ORIGIN=core hab studio enter
 Once in the studio, build the cfize exporter, then import and export the redmine package.
 ```
 build components/pkg-cfize
-hab pkg install <your-origin>-redmine-3.4.2-<datestamp>-x86_64-linux.hart
-hab pkg exec core/hab-pkg-cfize hab-pkg-cfize <your-origin>/redmine ./cf-mapping.toml
+hab pkg install &lt;your-origin>-redmine-3.4.2-&lt;datestamp>-x86_64-linux.hart
+hab pkg exec core/hab-pkg-cfize hab-pkg-cfize &lt;your-origin>/redmine ./cf-mapping.toml
 ```
 
 #### Write the Manifest File
@@ -448,14 +456,14 @@ application:
 ```
 ---
 applications:
-- name: redmine_on_cf
+- name: redmine
   memory: 512M
   instances: 1
   services:
     - redmine_production_db
   env:
     RAILS_ENV: production
-    SECRET_KEY_BASE: "<replace-with-your-generated-key>"
+    SECRET_KEY_BASE: "&lt;replace-with-your-generated-key>"
 ```
 
 As you can see, this specifies the memory footprint and instance counts for
@@ -471,27 +479,46 @@ much more complicated to setup).  You may need to retag the generated docker
 image to match your dockerhub organization first.
 
 ```
-docker tag <your-origin>/redmine:cf-<id-generated-by-hab-export> <your-dockerhub-org>/redmine:<tag> #optional
-docker push <your-dockerhub-org>/redmine:<tag>
+docker tag &lt;your-origin>/redmine:cf-&lt;id-generated-by-hab-export> &lt;your-dockerhub-org>/redmine:&lt;tag> #optional
+docker push &lt;your-dockerhub-org>/redmine:&lt;tag>
 ```
 
 Now that that pushed to DockerHub, we can do the `cf push` to create the app in
 Cloud Foundry.  Run this from the same directory that contains the
 manifest.yml file.
 ```
-cf push --docker-image <your-dockerhub-org>/redmine:<tag>
+cf push --docker-image &lt;your-dockerhub-org>/redmine:&lt;tag>
 ```
 
 #### Initializing your Database
-Just like before, you're going to have to initialize your database before the
-app can fully start.
-
-TODO:
-> Intructions on how to do this...
+You'd normally have to initialize your database before the app can fully
+start.  However, we're cheating a little by using the database that we already
+initialized in the example above.  If we were running this from scratch, you'd
+have to initialize your database directly, as you can't use the same tricks as
+above on CF.  Alternatively, you may be able to use Habitat hooks to create
+and migrate the database, but currently for Rails 4.2 apps, this doesn't work
+due to a conflict between rails_12factor gem's effects and rake db:migrate
+requirements.
 
 #### Fruits of your Labour
 Visit http://domain.of.your.app/ to see Redmine running under Habitat on Cloud
-Foundry.  To find the domain of your app, run cf app redmine_on_cf.
+Foundry.  To find the domain of your app, run `cf app redmine`.  For example:
+```
+cf app redmine
+<i>Showing health and status for app redmine in org pcfdev-org / space pcfdev-space as user...
+OK
+
+requested state: started
+instances: 1/1
+usage: 512M x 1 instances
+urls: <span style="background-color: #FF8">redmine.local.pcfdev.io</span>
+last uploaded: Sun Sep 17 08:50:32 UTC 2017
+stack: cflinuxfs2
+buildpack: unknown
+
+     state     since                    cpu    memory           disk           details
+#0   running   2017-09-17 01:51:58 AM   0.6%   182.9M of 512M   624K of 512M</i>
+```
 
 - - -
 
