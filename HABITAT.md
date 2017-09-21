@@ -305,9 +305,194 @@ networks, such as:
 listen_addresses = 'localhost,192.168.192.1'
 ```
 
+The location of these files will depend on your local PostgreSQL installation.
+
 TODO:  
 > We really should figure out if this is necessary, so when testing,
 don't add these unless it doesn't work.
+
+Now that we have the database set up, we need to specify our updated configuration:
+```
+[db]
+user = "redmine_user"
+password = "pw4redmine"
+name = "redmine_production"
+host = "192.168.65.1"
+```
+
+The 192.168.65.1 address is a special address that docker uses to connect to
+the host machine.  The other changes are to use the new database user (aka
+role) that we just created.
+
+Save that file as `update.toml`, and pass it in via assigning it to the
+configuration environment variable in the docker command to get the app running:
+```
+docker run -p 8000:8000 -e HAB_REDMINE="$(cat update.toml)" starkandwayne/redmine:latest
+```
+
+Just like the previous example, Habitat will start but report errors because
+the database has not been initialized.  To solve this problem, we first have
+to find out the docker container ID, then run db:create and db:migrate tasks
+inside it.  Execute the following in another terminal, and use the container
+ID (location highlighted in yellow) that your system reports.
+
+```
+docker ps
+<i>CONTAINER ID        IMAGE                                              COMMAND                  CREATED             STATUS              PORTS              NAMES
+<span style="background-color:#FF8">64f86dcaf57b</span>        starkandwayne/redmine:latest                       "/init.sh start st..."   47 seconds ago      Up 46 seconds       0.0.0.0:8000->8000/tcp   affectionate_kilby
+...
+</i>
+docker exec <span style="background-color:#FF8">64f86dcaf57b</span> redmine-rake db:create db:migrate
+```
+
+You will notice in the original terminal that the app is now running
+correctly, listening on port 8000.  Point your browser at
+http://localhost:8000 to verify that it is working properly.  When done,
+simply Ctrl-C in that terminal to terminate the docker container.
+
+## Running as a Cloud Foundry App
+
+So we now have Redmine running in a Docker container under Habitat, using an
+"external" database service.  But what we really want to get to is running
+this under Cloud Foundry to take advantage of all it has to offer regarding
+application managment.  Here are the next steps needed to achieve that.
+
+#### Setting up a Service Broker for your Database
+
+First we're going to need a PostgreSQL database.  In Cloud Foundry, this will
+be provided to the app as a service, most commonly via a service broker.
+However, for the purpose of this introduction, we will use a User-Provided
+Service to allow us to use the same PostgreSQL database on our local host
+(this only works with a local CF, such as running [PCFDev](https://pivotal.io/pcf-dev).)
+
+Run the following command to create a new UPS, and enter the details at the
+prompts.
+```
+cf cups redmine_production_db -p "url,database,username,password"
+
+<i>url></i> 192.168.11.1
+
+<i>database></i> redmine_production_cf
+
+<i>username></i> redmine_user
+
+<i>password></i> pw4redmine
+<i>Creating user provided service redmine_production_db in org pcfdev-org / space pcfdev-space as user...
+OK</i>
+```
+
+The url can be determined from viewing your `ifconfig` output and determining
+the network that your local PCFDev is running on.  Alternatively, if you have
+exposed your database to the Internet, you can just use your primary IP
+address.
+
+#### Building a Mapping File
+Now that Cloud Foundry has a service, we need to map those values into the
+toml file that Habitat uses to configure the application.  Create the
+following file as `./cf-mapping.toml`.
+```
+secret_key_base = "$SECRET_KEY_BASE"
+rails_env = "$RAILS_ENV"
+port = "$PORT"
+
+[db]
+user = "$(service "redmine-pg" '.credentials.username')"
+password = "$(service "redmine-pg" '.credentials.password')"
+host = "$(service "redmine-pg" '.credentials.host')"
+name = "$(service "redmine-pg" '.credentials.database')"
+```
+
+This file is not a regular .toml file, but a template that will be processed by
+the export process.  The `service` helper functions pull the information out
+of the CF environment variable VCAP_SERVICES that we need to provide Habitat.
+The `$PORT` environment variable is provided by CF directly, and the
+`$SECRET_KEY_BASE` and `$RAILS_ENV` we will provide in our manifest.yml file
+(see below).
+
+#### Exporting a CF-Compatible Docker Image
+
+We will use the cfize exporter to create a CF-compatible docker image, just
+like we used the docker exporter to create a regular docker image above. At
+the time of this writing, the cfize exporter needs to be taken from the
+cf-exporter branch in the starkandwayne fork of habitat.  Git-clone that repo
+in a new directory:
+
+```
+git clone https://github.com/starkandwayne/habitat.git
+git checkout cf-exporter
+```
+
+Next, copy your redmine .hart file and the cf-mapping.toml file to the base of
+this repository, then enter the Habitat studio using the core origin (you'll
+have to create a dummy core origin key for this to work -- you don't need the
+real key as you won't be pushing anything to core)
+
+```
+cp /path/to/redmine-repo/results/<your-origin>-redmine-3.4.2-<datestamp>-x86_64-linux.hart .
+cp /path/to/redmine-repo/cf-mapping.toml .
+HAB_ORIGIN=core hab studio enter
+```
+
+Once in the studio, build the cfize exporter, then import and export the redmine package.
+```
+build components/pkg-cfize
+hab pkg install <your-origin>-redmine-3.4.2-<datestamp>-x86_64-linux.hart
+hab pkg exec core/hab-pkg-cfize hab-pkg-cfize <your-origin>/redmine ./cf-mapping.toml
+```
+
+#### Write the Manifest File
+For the application to properly enter the Cloud Foundry ecosystem, it needs to
+be pushed with the correct configuration.  The easiest way to do this is via a
+manifest.yml file.  This is the manifest file tha we're using for this
+application:
+```
+---
+applications:
+- name: redmine_on_cf
+  memory: 512M
+  instances: 1
+  services:
+    - redmine_production_db
+  env:
+    RAILS_ENV: production
+    SECRET_KEY_BASE: "<replace-with-your-generated-key>"
+```
+
+As you can see, this specifies the memory footprint and instance counts for
+the app, associates the database service we previously created, and sets the
+environment variables needed by the app.
+
+#### Pushing your App
+
+To use the cfized docker image, we need to push it -- twice.  First, we need
+to push it up to DockerHub, because that's where Cloud Foundry expects to pull
+docker images from (a local docker repository is also a viable option, but
+much more complicated to setup).  You may need to retag the generated docker
+image to match your dockerhub organization first.
+
+```
+docker tag <your-origin>/redmine:cf-<id-generated-by-hab-export> <your-dockerhub-org>/redmine:<tag> #optional
+docker push <your-dockerhub-org>/redmine:<tag>
+```
+
+Now that that pushed to DockerHub, we can do the `cf push` to create the app in
+Cloud Foundry.  Run this from the same directory that contains the
+manifest.yml file.
+```
+cf push --docker-image <your-dockerhub-org>/redmine:<tag>
+```
+
+#### Initializing your Database
+Just like before, you're going to have to initialize your database before the
+app can fully start.
+
+TODO:
+> Intructions on how to do this...
+
+#### Fruits of your Labour
+Visit http://domain.of.your.app/ to see Redmine running under Habitat on Cloud
+Foundry.  To find the domain of your app, run cf app redmine_on_cf.
+
 - - -
 
 <b id="f1">[1]</b> These steps were performed by following the excellent "[Habitat, Rails, and
@@ -319,3 +504,5 @@ don't add these unless it doesn't work.
 <b id="f2">[2]</b> [[scaffolding-ruby] provide a default database config for asset compilation #757](https://github.com/habitat-sh/core-plans/pull/757) [↩](#a2)
 
 <b id="f3">[3]</b> Habitat tutorial on how to [dynamically update your app](https://www.habitat.sh/tutorials/sample-app/mac/update-app/) [↩](#a3)
+
+<b id="f3">[3]</b> https://pivotal.io/pcf-dev

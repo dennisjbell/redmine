@@ -1,9 +1,9 @@
 secret_key_base = "$SECRET_KEY_BASE"
-rails_env = "RAILS_ENV"
+rails_env = "$RAILS_ENV"
 port = "$PORT"
 
 [db]
-host = "$(services '.user-provided[0].credentials.url')"
-name = "$(services '.user-provided[0].credentials.database')"
-user = "$(services '.user-provided[0].credentials.username')"
-password = "$(services '.user-provided[0].credentials.password')"
+user = "$(service "redmine_production_db" '.credentials.username')"
+password = "$(service "redmine_production_db" '.credentials.password')"
+host = "$(service "redmine_production_db" '.credentials.host')"
+name = "$(service "redmine_production_db" '.credentials.database')"

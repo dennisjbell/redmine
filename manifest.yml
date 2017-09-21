@@ -1,7 +1,10 @@
 ---
 applications:
-- name: redmine
+- name: redmine_on_cf
   memory: 512M
   instances: 1
   services:
-    - redmine_production
+    - redmine_production_db
+  env:
+    RAILS_ENV: production
+    SECRET_KEY_BASE: 6fed7f26f270db5251fa8016b83ea6a60d0c6c7687947e535d8bbb08b09326bcef7df1b7edc9bdc4d1d2ea941c1aee41ed48a4ab79d42725c1f8477101ae9348
