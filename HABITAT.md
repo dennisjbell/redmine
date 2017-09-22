@@ -6,7 +6,7 @@ behavior around the application itself, not the infrastructure that the app
 runs on. This allows Habitat to be deployed and run on various infrastructure
 environments, such as bare metal, VM, containers, and PaaS.
 
-Specifically, we want to run Redmine in Habitat either natively, in a docker
+Specifically, we want to run Redmine in Habitat either natively, in a Docker
 container, or as a Cloud Foundry app.  Below you will find instructions on how
 to accomplish this.
 
@@ -102,7 +102,7 @@ do_install() {
 While most of this is boilerplate Habitat plan contents, the uncommon items
 are:
 * The `pkg_binds_optional` -- by making this optional, the Habitat supervisor
-  will start up without having another habitat service providing these to our
+  will start up without having another Habitat service providing these to our
   app.  This allows external sources for the database.
 
 * The `pkg_exports` and `pkg_exposes`, which is required for making this work on
@@ -122,7 +122,7 @@ id="a2">[2](#f2)</sup>
 #### The `habitat/default.toml` File
 
 The default.toml file contains the base configuration for the packaged Redmine
-habitat file that we're going to generate.  It contains both base settings
+Habitat file that we're going to generate.  It contains both base settings
 that are not likely to need changing, as well as default (or empty) values
 that should be overwritten by using `hab config apply ...` <sup
 id="a3">[3](#f3)</sup> once running or by editing default.toml directly and
@@ -142,13 +142,7 @@ port = 8000
 user = "admin"
 password = "admin"
 name = "redmine_production"
-host = "192.168.65.1"
 ```
-
-### NOTE:
-> Having the host set may cause [this problem](#p1) -- leave in when testing
-to see if the same issue is encountered.  If so, will remove in the final 
-version.
 
 The secret_key_base being empty will cause the app to fail to start when first
 pushed up.  If you wish to set this in default.toml, but can't or don't want
@@ -176,9 +170,9 @@ hab studio enter
 ```
 
 Once inside the studio, run `build`.  Once that completes, run the following
-to export it to docker:
+to export it to Docker:
 ```
-hab pkg export docker &lt;your-origin-name>/redmine
+hab pkg export docker <your-origin-name>/redmine
 ```
 
 To test that the export worked, we're also going to want to use
@@ -191,7 +185,7 @@ Once that is complete, exit the studio with a Ctrl-D or type `exit`.
 
 ## Run using Docker
 
-To run under docker, we'll need to setup the docker-compose.yml file.  This
+To run under Docker, we'll need to setup the docker-compose.yml file.  This
 file already exists in this repo, but for completeness, we'll explain the
 contents here.
 
@@ -214,7 +208,7 @@ services:
 ```
 
 This `docker-compose.yml` file specifies that there are two services: `db` and
-`railsapp`, using the hab-exported docker images of core/postgresql and 
+`railsapp`, using the hab-exported Docker images of core/postgresql and 
 starkandwayne/redmine respectively.  If you build and export your own redmine
 package, substitute starkandwayne with your own origin name.  Under both of
 these services, we specify that we want to mount the ./habitat/default.toml
@@ -224,7 +218,7 @@ configurations.
 Under the `railsapp` service, we specify the port mapping of 8000:8000 which
 maps the localhost's port 8000 to the container's port 8000, where the rails
 app is running.  We also specify the `command`, which is actually the argument
-to the docker entrypoint `./init.sh`.  These options will get passed to the
+to the Docker entrypoint `./init.sh`.  These options will get passed to the
 hab sup command through that entrypoint and specify the consumer/provider
 relationship between the railsapp and db.
 
@@ -253,25 +247,6 @@ running and listening on port 8000.  Verify that the app is now working by
 visiting http://localhost:8000 in your browser.  The login for the admin user
 is `admin` with password `admin`.
 
-<a name=p1></a>
-### FIXME/TODO/WTF:
-> When I logged into redmine, it prompted me to change the
-password, then immediately told me the password had expired and prompted me to
-change it again.  While the password had changed, the `must_change_passwd`
-field did not get set to `f` in the database.  When I changed this manually,
-it stopped prompting for a new password.  I do not know if this is due to the
-pg gem version or something else that was changed to make this work in
-habitat or if its a bug in this branch of redmine.  I will see if it continues
-to be problematic.  We did not have this problem in the Rails 5.0 master
-branch habiterization.
-
-### UPDATE:
-> Changed the default.toml file to not include the host (which was left over
-from the connect to local database previously tested on the Rails 5.0 step)
-and recreated the app/db containers, and it worked. Not sure if this fixes
-it, or if its just a coincidence.
-
-
 Now that we've verified that this works, we can stop it by hitting Ctrl-C in
 the running terminal, then remove the containers using
 ```
@@ -283,7 +258,7 @@ docker-compose rm
 The above works fine, but once stopped, the data is lost, so that's no good
 for anyone.  Let's connect to an external database, in this case, on the local
 machine.  To do this, we need to change the database credentials and add the
-host.  Also we won't need to use docker-compose, a simple docker run will
+host.  Also we won't need to use docker-compose, a simple `docker run` will
 suffice.
 
 But first, we need to set up the local PostgreSQL role.  The following command
@@ -320,19 +295,19 @@ name = "redmine_production"
 host = "192.168.65.1"
 ```
 
-The 192.168.65.1 address is a special address that docker uses to connect to
+The 192.168.65.1 address is a special address that Docker uses to connect to
 the host machine.  The other changes are to use the new database user (aka
 role) that we just created.
 
 Save that file as `update.toml`, and pass it in via assigning it to the
-configuration environment variable in the docker command to get the app running:
+configuration environment variable in the Docker command to get the app running:
 ```
 docker run -p 8000:8000 -e HAB_REDMINE="$(cat update.toml)" starkandwayne/redmine:latest
 ```
 
 Just like the previous example, Habitat will start but report errors because
 the database has not been initialized.  To solve this problem, we first have
-to find out the docker container ID, then run db:create and db:migrate tasks
+to find out the Docker container ID, then run db:create and db:migrate tasks
 inside it.  Execute the following in another terminal, and use the container
 ID (location highlighted in yellow) that your system reports.
 
@@ -348,7 +323,7 @@ docker exec <span style="background-color:#FF8">64f86dcaf57b</span> redmine-rake
 You will notice in the original terminal that the app is now running
 correctly, listening on port 8000.  Point your browser at
 http://localhost:8000 to verify that it is working properly.  When done,
-simply Ctrl-C in that terminal to terminate the docker container.
+simply Ctrl-C in that terminal to terminate the Docker container.
 
 ## Running as a Cloud Foundry App
 
@@ -419,24 +394,24 @@ process.
 
 #### Exporting a CF-Compatible Docker Image
 
-We will use the cfize exporter to create a CF-compatible docker image, just
-like we used the docker exporter to create a regular docker image above. At
+We will use the `cfize` exporter to create a CF-compatible Docker image, just
+like we used the `docker` exporter to create a regular Docker image above. At
 the time of this writing, the cfize exporter needs to be taken from the
 cf-exporter branch in the starkandwayne fork of habitat.  Git-clone that repo
-in a new directory:
+in a new directory.  You'll also have to create a `core` origin key in order
+to build the cfize component.
 
 ```
 git clone https://github.com/starkandwayne/habitat.git
 git checkout cf-exporter
+HAB_ORIGIN=core hab origin key generate core
 ```
 
 Next, copy your redmine .hart file and the cf-mapping.toml file to the base of
-this repository, then enter the Habitat studio using the core origin (you'll
-have to create a dummy core origin key for this to work -- you don't need the
-real key as you won't be pushing anything to core)
+this repository, then enter the Habitat studio using the core origin.
 
 ```
-cp /path/to/redmine-repo/results/&lt;your-origin>-redmine-3.4.2-&lt;datestamp>-x86_64-linux.hart .
+cp /path/to/redmine-repo/results/<your-origin>-redmine-3.4.2-<datestamp>-x86_64-linux.hart .
 cp /path/to/redmine-repo/cf-mapping.toml .
 HAB_ORIGIN=core hab studio enter
 ```
@@ -444,9 +419,13 @@ HAB_ORIGIN=core hab studio enter
 Once in the studio, build the cfize exporter, then import and export the redmine package.
 ```
 build components/pkg-cfize
-hab pkg install &lt;your-origin>-redmine-3.4.2-&lt;datestamp>-x86_64-linux.hart
-hab pkg exec core/hab-pkg-cfize hab-pkg-cfize &lt;your-origin>/redmine ./cf-mapping.toml
+hab pkg install <your-origin>-redmine-3.4.2-<datestamp>-x86_64-linux.hart
+hab pkg exec core/hab-pkg-cfize hab-pkg-cfize <your-origin>/redmine ./cf-mapping.toml
 ```
+
+Once the `cfize` exporter is part of the habitat, you'll simply be able to
+export it from the same Habitat studio environment that you built your package
+in, similar to the `docker` export from the previous examples.
 
 #### Write the Manifest File
 For the application to properly enter the Cloud Foundry ecosystem, it needs to
@@ -463,7 +442,7 @@ applications:
     - redmine_production_db
   env:
     RAILS_ENV: production
-    SECRET_KEY_BASE: "&lt;replace-with-your-generated-key>"
+    SECRET_KEY_BASE: "<replace-with-your-generated-key>"
 ```
 
 As you can see, this specifies the memory footprint and instance counts for
@@ -472,22 +451,22 @@ environment variables needed by the app.
 
 #### Pushing your App
 
-To use the cfized docker image, we need to push it -- twice.  First, we need
+To use the cfized Docker image, we need to push it -- twice.  First, we need
 to push it up to DockerHub, because that's where Cloud Foundry expects to pull
-docker images from (a local docker repository is also a viable option, but
-much more complicated to setup).  You may need to retag the generated docker
-image to match your dockerhub organization first.
+Docker images from (a local Docker repository is also a viable option, but
+much more complicated to setup).  You may need to retag the generated Docker
+image to match your Docker Hub organization first.
 
 ```
-docker tag &lt;your-origin>/redmine:cf-&lt;id-generated-by-hab-export> &lt;your-dockerhub-org>/redmine:&lt;tag> #optional
-docker push &lt;your-dockerhub-org>/redmine:&lt;tag>
+docker tag <your-origin>/redmine:cf-<id-generated-by-hab-export> <your-dockerhub-org>/redmine:<tag> #optional
+docker push <your-dockerhub-org>/redmine:<tag>
 ```
 
 Now that that pushed to DockerHub, we can do the `cf push` to create the app in
 Cloud Foundry.  Run this from the same directory that contains the
 manifest.yml file.
 ```
-cf push --docker-image &lt;your-dockerhub-org>/redmine:&lt;tag>
+cf push --docker-image <your-dockerhub-org>/redmine:<tag>
 ```
 
 #### Initializing your Database
